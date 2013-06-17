@@ -32,8 +32,8 @@ def main():
 
     (options, args) = parser.parse_args()
     
-    logging.debug(options)
-    logging.debug(args)
+    #logging.debug(options)
+    #logging.debug(args)
      
     if options.connection is None:
         logging.fatal('Connection object empty! This should not happen')
