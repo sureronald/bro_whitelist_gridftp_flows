@@ -23,7 +23,11 @@ class BroConnectionTcpHandler(SocketServer.BaseRequestHandler):
         return json_data
     
     def handle(self):
-	   pass
+        while True:
+            rec_tmp = self.request.recv(1024).strip()
+            if not rec_tmp:
+                break
+            print rec_tmp
     
     def finish(self):
         pass
@@ -37,7 +41,7 @@ class SocketController:
         pass
     
     def start_socket(self):
-        #logging.debug("Vtiger OpenNMS Integration Server started\n-------------------------------------------------------")
+        #logging.debug("------------ Bro New Connection Listener Socket Started ------------")
         server = SocketServer.ThreadingTCPServer(HOST_PORT, BroConnectionTcpHandler)
         server.serve_forever()
     
