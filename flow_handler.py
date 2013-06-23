@@ -52,7 +52,7 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
         pattern = re.compile("([a-z_]+)=([A-Za-z0-9/\.:]+)")
         match_group = pattern.findall(self.connection_str)
         if len(match_group) < 4:
-            logging.error("Error matching objects, manual check recommeneded on: "+self.connection_str)
+            logging.error("Error matching object, manual check recommeneded on: "+self.connection_str)
             return
         
         #Cast matching group tuples list to dict
@@ -76,7 +76,7 @@ class SocketController:
     
     def start_socket(self):
         try:
-            logging.debug("--------- New Connections Listener Started ----------")
+            logging.debug("--------- New Connections Listener Started %s:%d ----------" % (HOST_PORT[0], HOST_PORT[1]))
             SERVER = SocketServer.ThreadingTCPServer(HOST_PORT, FlowTcpHandler)
             SERVER.serve_forever()
         except KeyboardInterrupt:
