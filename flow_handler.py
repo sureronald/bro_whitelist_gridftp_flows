@@ -30,9 +30,13 @@ FLOWS_CACHE = {}
 
 FLOW_CACHE_MAX_TIME = 900 
 
+#GridFTP Flow settings
+
+GRIDFTP_CONTROL_PORT = 2811
+
 #Logging Settings
 
-LOGGING_PATH='/var/log/flow_notify.log'
+LOGGING_PATH='/var/log/flow_notify.log' #IMPORTANT: Ensure this file is writable
 LOGGING_LEVEL=logging.DEBUG
 
 #Initialize logging basic config globally
@@ -54,6 +58,8 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
             if not data_recv:
                 break
             self.connection_str += data_recv
+        
+        self.request.close()
         
         logging.debug(self.connection_str)
         
@@ -77,25 +83,49 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
         
         conn_obj = dict(match_group)
         
-        #logging.debug(connection_object)
+        #We now strip the /tcp portion of the resp_p and orig_p and cast the values to int
+        
+        conn_obj['orig_p'] = conn_obj['orig_p'].replace('/tcp','')
+        conn_obj['resp_p'] = conn_obj['resp_p'].replace('/tcp','')
+        
+        conn_obj['orig_p'] = int(conn_obj['orig_p'])
+        conn_obj['resp_p'] = int(conn_obj['resp_p'])
+        
+        logging.debug(conn_obj)
         
         #We now add a flow to the data structure if it does not exist or update port range if needed
-        #If communication is on port 2811 (control port), we 
+        #If communication is on port 2811 (control port), we put it where???XX$$$?????
         
         flow_key = conn_obj['orig_h'] + '-' + conn_obj['resp_h']
-        if FLOWS_CACHE.has_key(flow_key):
-            #We update the flow entry port range if necessary
+        
+        if conn_obj['orig_p'] is GRIDFTP_CONTROL_PORT or conn_obj['resp_p'] is GRIDFTP_CONTROL_PORT:
+            logging.debug('We have control port communication, see below log')
+            logging.debug(con_obj)
+        elif FLOWS_CACHE.has_key(flow_key):
+            #We update the flow entry port range and the time too
             
-            logging.debug('We have a flow going this direction!!')
+            orig_ports = [conn_obj['orig_p']] + FLOWS_CACHE[ flow_key ]['orig_p_range'] #Join port values to one list
+            resp_ports = [conn_obj['resp_p']] + FLOWS_CACHE[ flow_key ]['resp_p_range']
+            
+            FLOWS_CACHE[ flow_key ]['orig_p_range'] = [ min(orig_ports),
+                                                       max(orig_ports)
+                                                       ]
+            FLOWS_CACHE[ flow_key ]['resp_p_range'] = [ min(resp_ports),
+                                                       max(resp_ports)
+                                                       ]
+            FLOWS_CACHE[ flow_key ]['time'] = time.time()
+            
+            logging.debug(FLOWS_CACHE[ flow_key ])
         else:
-            #We create a new flow entry into the cache. Port entries are first assumed to be the minimum value
+            #We create a new flow entry into the cache. Min and max port values are first assumed to be equal because
+            #we only have one port for now and nothing to compare to
             
             FLOWS_CACHE[ flow_key ] = {
-                                       'orig_p_range': [conn_obj['orig_p'], None],
-                                       'resp_p_range': [conn_obj['resp_p'], None],
+                                       'orig_p_range': [conn_obj['orig_p'], conn_obj['orig_p']],
+                                       'resp_p_range': [conn_obj['resp_p'], conn_obj['resp_p']],
                                        'time': time.time()
                                        }
-            logging.debug(FLOWS_CACHE)
+        logging.debug(FLOWS_CACHE)
         
     
     def finish(self):
