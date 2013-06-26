@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # Triggered by Bro system call to notify web interface
 
 import time
@@ -5,6 +7,7 @@ import sys
 import re
 import SocketServer
 import logging
+import pickle
 
 __author__ = 'Ronald Osure (rosure@indiana.edu)'
 __copyright__ = 'Copyright 2012, InCNTRE. This file is licensed under Apache 2.0'
@@ -36,7 +39,7 @@ GRIDFTP_CONTROL_PORT = 2811
 
 #Logging Settings
 
-LOGGING_PATH='/var/log/flow_notify.log' #IMPORTANT: Ensure this file is writable
+LOGGING_PATH='/var/log/flow_handler.log' #IMPORTANT: Ensure this file is writable
 LOGGING_LEVEL=logging.DEBUG
 
 #Initialize logging basic config globally
@@ -51,6 +54,10 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
     #Received flow connection data is read into this variable
     
     connection_str = ''
+    
+    #Pickle update file status
+    
+    flow_cache_update_pickle = False
     
     def handle(self):
         while True:
@@ -99,7 +106,7 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
         flow_key = conn_obj['orig_h'] + '-' + conn_obj['resp_h']
         
         if conn_obj['orig_p'] is GRIDFTP_CONTROL_PORT or conn_obj['resp_p'] is GRIDFTP_CONTROL_PORT:
-            logging.debug('We have control port communication, see below log')
+            logging.debug('We have control port communication, how should I treat this?')
             logging.debug(con_obj)
         elif FLOWS_CACHE.has_key(flow_key):
             #We update the flow entry port range and the time too
@@ -115,6 +122,8 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
                                                        ]
             FLOWS_CACHE[ flow_key ]['time'] = time.time()
             
+            self.flow_cache_update_pickle = True
+            
             logging.debug(FLOWS_CACHE[ flow_key ])
         else:
             #We create a new flow entry into the cache. Min and max port values are first assumed to be equal because
@@ -125,11 +134,24 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
                                        'resp_p_range': [conn_obj['resp_p'], conn_obj['resp_p']],
                                        'time': time.time()
                                        }
+            
+            self.flow_cache_update_pickle = True
         logging.debug(FLOWS_CACHE)
         
     
     def finish(self):
-        pass
+        """
+        We need to dump the current status of the cache to a pickle file for reading by push_flows.py that processes the
+        data and pushes them as rules to FlowScale.
+        """
+        if self.flow_cache_update_pickle:
+            try:
+                with open('flows_cache.pickle', 'wb') as f:
+                    pickle.dump(FLOWS_CACHE,f)
+            except IOError:
+                logging.fatal("Unable to open flows_cache file for writing")
+        
+        self.flow_cache_update_pickle = False
 
 class SocketController:
     """
