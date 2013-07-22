@@ -70,7 +70,7 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
         
         logging.debug(self.connection_str)
         
-        if self.connection_str is '':
+        if self.connection_str == '':
             logging.fatal('Connection object empty! This should not happen')
             
             #Should we execute a sys.exit and break? sys.exit(1)
@@ -105,7 +105,7 @@ class FlowTcpHandler(SocketServer.BaseRequestHandler):
         
         flow_key = conn_obj['orig_h'] + '-' + conn_obj['resp_h']
         
-        if conn_obj['orig_p'] is GRIDFTP_CONTROL_PORT or conn_obj['resp_p'] is GRIDFTP_CONTROL_PORT:
+        if conn_obj['orig_p'] == GRIDFTP_CONTROL_PORT or conn_obj['resp_p'] == GRIDFTP_CONTROL_PORT:
             logging.debug('We have control port communication, how should I treat this?')
             logging.debug(con_obj)
         elif FLOWS_CACHE.has_key(flow_key):
@@ -162,6 +162,8 @@ class SocketController:
         pass
     
     def start_socket(self):
+        print "--------- Starting Connections Listener on %s:%d ----------" % (HOST_PORT[0], HOST_PORT[1])
+        
         try:
             logging.debug("--------- New Connections Listener Started %s:%d ----------" % (HOST_PORT[0], HOST_PORT[1]))
             SERVER = SocketServer.ThreadingTCPServer(HOST_PORT, FlowTcpHandler)
