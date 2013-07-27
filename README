@@ -1,5 +1,9 @@
+#DOCS
 
+-- Current Project Status --
 
+Because FlowScale is built on top of openflow 1.0, we can't push rules specifying port ranges as this is a feature that is not supported by the openflow 1.0.
+Right now the flow_handler.py daemon script is able to build a flows cache based on the gridftp traffic it sees from the Bro IDS.
 
-Seeing the difference between packet level analysis and connection level analysis. Connection level analysis reduces overhead!
+Pushing rules through FlowScale will give us a way of managing the rules through a web interface.
 
